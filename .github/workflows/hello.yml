@@ -12,5 +12,16 @@ jobs:
     steps:
       - name: welcome message
         run: echo "Welcome to Github Actions for the First Time"
-      
+
+      - name: present working dir
+        run: pwd
+
+      - name: list before checkout
+        run: ls -al
+
+      - name: checkout repo
+        uses: actions/checkout@v5
+
+      - name: list after repo
+        run: ls -al
       
