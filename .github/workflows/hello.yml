@@ -2,7 +2,7 @@ name: dashboard frontend
 
 on:
   push:
-    branch:
+    branches:
       - dev
 
 jobs:
@@ -11,6 +11,6 @@ jobs:
 
     steps:
       - name: welcome message
-      run: echo "Welcome to Github Actions for the First Time"
+        run: echo "Welcome to Github Actions for the First Time"
       
       
