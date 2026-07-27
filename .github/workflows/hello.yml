@@ -10,18 +10,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: welcome message
-        run: echo "Welcome to Github Actions for the First Time"
-
-      - name: present working dir
-        run: pwd
-
-      - name: list before checkout
-        run: ls -al
-
       - name: checkout repo
         uses: actions/checkout@v5
 
-      - name: list after repo
-        run: ls -al
+      - name: setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
       
+      - name: verify node version
+        run: node -v
+
+      - name: verify npm version
+        run: npm -v
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: build react application
+        run: npm run build
+
+      - name: show build folder
+        run: ls -al build
+      
+        
