@@ -1,1 +1,16 @@
-name: analyst-dashboard
+name: dashboard frontend
+
+on:
+  push:
+    branch:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: welcome message
+      run: echo "Welcome to Github Actions for the First Time"
+      
+      
