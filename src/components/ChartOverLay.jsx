@@ -1,10 +1,10 @@
- import React, { useState, useEffect } from "react";
- 
+import React, { useState, useEffect } from "react";
+
 export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved, chart }) {
   const [showVisuals, setShowVisuals] = useState(true);
   const [showData, setShowData] = useState(true);
-  const [xAxis, setXAxis] = useState(null);
-  const [yAxis, setYAxis] = useState(null);
+  const [xAxis, setXAxis] = useState([]);
+  const [yAxis, setYAxis] = useState([]);
   const [chartType, setChartType] = useState("BAR");
   const [title, setTitle] = useState("");
   const [chartConfigs, setChartConfigs] = useState([]);
@@ -12,14 +12,15 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
   const [loading, setLoading] = useState(false);
   const [fileId, setFileId] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "success" });
- 
-  const token = localStorage.getItem("token");
- 
-  // --- 1. Comprehensive Icon Mapping ---
+  const [size, setSize] = useState([]);
+  const [legend, setLegend] = useState([]);
+  const token = sessionStorage.getItem("token");
+
+
   const getChartIcon = (type) => {
     switch (type?.toUpperCase()) {
       case "BAR": return "📊";
-      case "HORIZONTAL_BAR": return "📋"; // Horizontal icon
+      case "HORIZONTAL_BAR": return "📋"; 
       case "LINE": return "📈";
       case "MULTI_LINE": return "📉";
       case "PIE": return "🥧";
@@ -41,27 +42,40 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
       default: return "📊";
     }
   };
- 
+
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
   };
- 
+
   useEffect(() => {
     if (chart) {
       const cfg = chart.config || {};
-      setXAxis(cfg.xAxis?.[0] || cfg.groupBy || cfg.columns?.[0] || cfg.steps?.[0] || null);
-      setYAxis(cfg.yAxis?.[0] || cfg.metrics?.[0] || cfg.columns?.[1] || cfg.steps?.[1] || null);
+      setXAxis(
+        cfg.xAxis ||
+        (cfg.groupBy ? [cfg.groupBy] : []) ||
+        cfg.columns ||
+        cfg.steps ||
+        []
+      );
+
+      setYAxis(
+        cfg.yAxis ||
+        cfg.metrics ||
+        []
+      );
       setChartType(chart.type?.toUpperCase() || "BAR");
       setTitle(chart.name || "");
+      setSize(cfg.size || []);
+      setLegend(cfg.legend || []);
     } else {
-      setXAxis(null);
-      setYAxis(null);
+      setXAxis([]);
+      setYAxis([]);
       setChartType("BAR");
       setTitle("");
     }
   }, [chart, open]);
- 
+
   const fetchChartConfigs = async () => {
     try {
       const response = await fetch("https://dashboard-backend-cyrd.onrender.com/api/chart-types/config", {
@@ -69,9 +83,9 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
       });
       const data = await response.json();
       if (response.ok) setChartConfigs(data.charts || []);
-    } catch (error) {}
+    } catch (error) { }
   };
- 
+
   const fetchColumns = async () => {
     try {
       const response = await fetch(`https://dashboard-backend-cyrd.onrender.com/api/upload/builder/${dashboardId}`, {
@@ -82,42 +96,54 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
         setColumns(data.columns || []);
         setFileId(data.fileId);
       }
-    } catch (error) {}
+    } catch (error) { }
   };
- 
+
   useEffect(() => {
     if (open) {
       fetchChartConfigs();
       fetchColumns();
     }
   }, [open]);
- 
-  // --- 2. Complete Mapping Logic for Backend ---
+
+
   const handleSaveChart = async () => {
     if (!fileId) return showToast("File not loaded yet ", "error");
     if (!xAxis && chartType !== "KPI" && chartType !== "GAUGE") {
-        return showToast("Please drag and drop fields ❌", "error");
+      return showToast("Please drag and drop fields ", "error");
     }
- 
+
     try {
       setLoading(true);
       const typeUpper = chartType.toUpperCase();
       let config = {};
- 
+
       // Proper logic for all 20 chart types
       if (["LINE", "AREA", "STACKED_BAR", "STACKED_AREA", "MULTI_LINE"].includes(typeUpper)) {
-        config = { xAxis: [xAxis], metrics: [yAxis], yAxis: [yAxis] };
+        config = {
+          xAxis: xAxis,
+          metrics: yAxis,
+          yAxis: yAxis
+        };
       } else if (["PIE", "DONUT", "BAR", "HORIZONTAL_BAR", "TREEMAP", "RADAR"].includes(typeUpper)) {
-        config = { groupBy: xAxis, metrics: [yAxis] };
+        config = {
+          groupBy: Array.isArray(xAxis) ? xAxis : [xAxis],
+          metrics: Array.isArray(yAxis) ? yAxis : [yAxis]
+        };
       } else if (["SCATTER", "BUBBLE", "HEATMAP"].includes(typeUpper)) {
-        config = { xAxis: xAxis, yAxis: yAxis, metrics: [yAxis] };
+        config = {
+          xAxis: xAxis,
+          yAxis: yAxis,
+          metrics: [yAxis],
+          ...(typeUpper === "SCATTER" ? { size, legend } : {}),
+        };
       } else if (typeUpper === "FUNNEL") {
-  config = {
-    groupBy: xAxis,
-    metrics: [yAxis],
-    steps: [xAxis, yAxis]
-  };
- 
+        config = {
+          groupBy: xAxis,
+          metrics: yAxis,
+          steps: [...xAxis, ...yAxis]
+        };
+
       } else if (typeUpper === "TABLE") {
         config = { columns: [xAxis, yAxis] };
       } else if (["KPI", "GAUGE", "WATERFALL"].includes(typeUpper)) {
@@ -125,16 +151,19 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
       } else if (typeUpper === "HISTOGRAM") {
         config = { xAxis: xAxis };
       }
- 
+
       const payload = {
         dashboardId: Number(dashboardId),
         fileId: fileId,
         name: title || `${xAxis} by ${yAxis}`,
         type: typeUpper,
-        config: config,
+        config: {
+          ...config,
+          title: title || `${xAxis} by ${yAxis}`, // ✅ ADD THIS LINE
+        },
         replaceWidgetId: chart?.id ? Number(chart.id) : 0,
       };
- 
+
       const response = await fetch("https://dashboard-backend-cyrd.onrender.com/api/widgets/custom", {
         method: "POST",
         headers: {
@@ -143,16 +172,20 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
         },
         body: JSON.stringify(payload),
       });
- 
+
       const result = await response.json();
- 
+
       if (response.ok) {
         onChartSaved({
-  ...result.widget,
-  name: title || result.widget?.name,
-  type: chartType,
-});
-        onClose();
+          ...chart, // keep existing chart data
+          ...result.widget,
+          name: title || result.widget?.name,
+          type: chartType,
+          config: {
+            ...(result.widget?.config || config),
+            title: title, // ✅ force updated title
+          },
+        }); onClose();
       } else {
         showToast(result.message || "Failed to save chart ", "error");
       }
@@ -162,24 +195,23 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
       setLoading(false);
     }
   };
- 
+
   if (!open) return null;
- 
+
   return (
     <div className="fixed inset-0 z-50 flex">
       {toast.show && (
         <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] transition-all duration-300">
-          <div className={`px-6 py-2 rounded-full shadow-lg text-sm font-medium border flex items-center gap-2 ${
-            toast.type === "success" ? "bg-green-600 border-green-400 text-white" : "bg-red-600 border-red-400 text-white"
-          }`}>
+          <div className={`px-6 py-2 rounded-full shadow-lg text-sm font-medium border flex items-center gap-2 ${toast.type === "success" ? "bg-green-600 border-green-400 text-white" : "bg-red-600 border-red-400 text-white"
+            }`}>
             {toast.message}
           </div>
         </div>
       )}
- 
+
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
       <div className="ml-auto h-full bg-[#f8fafc] text-black shadow-xl relative z-10 p-3 flex transition-all duration-300">
-       
+
         {/* Left Side: Configuration */}
         <div className={`transition-all duration-300 border-r p-2 ${showVisuals ? "w-[260px]" : "w-[40px]"} overflow-hidden`}>
           <div className="flex justify-between items-center mb-2">
@@ -200,30 +232,67 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
                 <input className="w-full border p-1.5 mt-1 rounded outline-none focus:ring-1 focus:ring-blue-500" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" />
               </div>
               <div className="mt-3 text-xs">
-                {(chartConfigs.find(c => c.type === chartType)?.requiredFields || ["xAxis", "metrics"]).map((field) => (
-                  <div key={field} className="mt-2">
-                    <p className="capitalize font-medium text-gray-600">{field}</p>
-                    <div
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const data = e.dataTransfer.getData("text/plain");
-                        if (["xAxis", "groupBy", "steps", "columns"].includes(field)) setXAxis(data);
-                        else setYAxis(data);
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                      className={`border-2 border-dashed p-2 min-h-[40px] rounded mt-1 flex items-center justify-center transition-colors ${
-                        ((["xAxis", "groupBy", "steps", "columns"].includes(field)) ? xAxis : yAxis) ? "bg-blue-50 border-blue-200 text-blue-700 font-medium" : "bg-gray-50 border-gray-200 text-gray-400"
-                      }`}
-                    >
-                      {((["xAxis", "groupBy", "steps", "columns"].includes(field)) ? xAxis : yAxis) || "Drop here"}
-                    </div>
-                  </div>
-                ))}
+                {(() => {
+                  const activeConfig = chartConfigs.find(c => c.type === chartType);
+                  const requiredFields = activeConfig?.requiredFields || ["xAxis", "metrics"];
+                  const optionalFields = activeConfig?.optionalFields || [];
+                  const getFieldPair = (field) => {
+                    if (["xAxis", "groupBy", "steps", "columns"].includes(field)) return [xAxis, setXAxis];
+                    if (field === "size") return [size, setSize];
+                    if (field === "legend") return [legend, setLegend];
+                    return [yAxis, setYAxis];
+                  };
+
+                  return [...requiredFields, ...optionalFields].map((field) => {
+                    const [fieldValue, setFieldValue] = getFieldPair(field);
+                    const isOptional = optionalFields.includes(field);
+
+                    return (
+                      <div key={field} className="mt-2">
+                        <p className="capitalize font-medium text-gray-600">
+                          {field}{isOptional ? " (optional)" : ""}
+                        </p>
+                        <div
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const data = e.dataTransfer.getData("text/plain");
+                            setFieldValue((prev) =>
+                              prev.includes(data) ? prev : [...prev, data]
+                            );
+                          }}
+                          onDragOver={(e) => e.preventDefault()}
+                          className="border-2 border-dashed p-2 min-h-[40px] rounded mt-1 flex flex-wrap items-center gap-1 transition-colors"
+                        >
+                          {Array.isArray(fieldValue) && fieldValue.length > 0
+                            ? fieldValue.map((item, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] mr-1 mb-1"
+                              >
+                                <span>{item}</span>
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFieldValue((prev) => prev.filter((v) => v !== item))
+                                  }
+                                  className="text-red-500 hover:text-red-700 font-bold leading-none"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))
+                            : "Drop here"}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
         </div>
- 
+
         {/* Center Side: Column List */}
         <div className={`transition-all duration-300 p-3 flex flex-col overflow-hidden ${showData ? "w-64" : "w-[40px]"}`}>
           <div className="flex justify-between items-center mb-2">
@@ -246,7 +315,7 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
             </div>
           )}
         </div>
- 
+
         {/* Header Actions */}
         <div className="absolute top-2 right-2 flex gap-2">
           <button onClick={handleSaveChart} disabled={loading} className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded font-medium transition-colors shadow-sm disabled:bg-gray-400">
@@ -258,5 +327,4 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
     </div>
   );
 }
- 
- 
+

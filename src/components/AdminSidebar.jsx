@@ -46,12 +46,12 @@ const AdminSidebar = () => {
 
   const handleLogout = () => {
     try {
-      localStorage.clear();
-      navigate("/profile");
+      sessionStorage.clear();
+      navigate("/", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
-      localStorage.clear();
-      navigate("/profile");
+      sessionStorage.clear();
+      navigate("/", { replace: true });
     }
   };
 

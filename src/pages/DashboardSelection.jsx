@@ -16,44 +16,46 @@ function DashboardSelection() {
 
   const [search, setSearch] = useState("");
   const [cards, setCards] = useState([]);
-
+  const [deleteId, setDeleteId] = useState(null);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
 
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
 
-  const profileImage = localStorage.getItem("profileImage");
+  const profileImage = sessionStorage.getItem("profileImage");
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openVizModal, setOpenVizModal] = useState(false);
   const [createdDashboardId, setCreatedDashboardId] = useState(null);
 
-  const role = localStorage.getItem("role")?.toLowerCase();
+  const role = sessionStorage.getItem("role")?.toLowerCase();
 
   const [profile, setProfile] = useState(null);
 
+  // useEffect(() => {
+  //   const handleBack = () => {
+  //     window.history.pushState(null, "", window.location.href);
+  //   };
+
+  //   window.history.pushState(null, "", window.location.href);
+  //   window.addEventListener("popstate", handleBack);
+
+  //   return () => {
+  //     window.removeEventListener("popstate", handleBack);
+  //   };
+  // }, []);
+
   useEffect(() => {
-    const handleBack = () => {
-      window.history.pushState(null, "", window.location.href);
-    };
+    const token = sessionStorage.getItem("token");
+console.log("dashboard screen")
 
-    window.history.pushState(null, "", window.location.href);
-    window.addEventListener("popstate", handleBack);
-
-    return () => {
-      window.removeEventListener("popstate", handleBack);
-    };
-  }, []);
-
-  useEffect(() => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    navigate("/");
-  }
-}, [navigate]);
+    if (!token) {
+      console.log("no token")
+      navigate("/");
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -209,7 +211,7 @@ function DashboardSelection() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(card.dashboardId);
+                        setDeleteId(card.dashboardId);
                       }}
                       className="bg-white p-2 rounded-full shadow-md hover:bg-red-50 hover:scale-110 transition"
                     >
@@ -257,7 +259,7 @@ function DashboardSelection() {
               </div>
             ))}
 
-            {(role === "admin" || role === "super_admin") && (
+            {(role === "admin" || role === "super_admin"  ) && (
               <div
                 onClick={() => setOpenCreateModal(true)}
                 className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-indigo-300 transition duration-300 h-[220px]"
@@ -298,6 +300,39 @@ function DashboardSelection() {
           token={token}
         />
       </div>
+      {deleteId && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 w-[320px] shadow-xl text-center">
+      
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        Confirm Delete
+      </h3>
+
+      <p className="text-sm text-gray-500 mb-5">
+        Are you sure you want to delete this dashboard?
+      </p>
+
+      <div className="flex justify-center gap-4">
+        <button
+          onClick={() => setDeleteId(null)}
+          className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+        >
+          No
+        </button>
+
+        <button
+          onClick={() => {
+            handleDelete(deleteId);
+            setDeleteId(null);
+          }}
+          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100"
+        >
+          Yes
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 }

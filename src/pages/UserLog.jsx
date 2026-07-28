@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import { useNavigate } from "react-router-dom";
-import { FiUser } from "react-icons/fi";
+import { FiUser,  FiCalendar } from "react-icons/fi";
 import axios from "axios";
 import AdminSidebar from "../components/AdminSidebar";
 import DatePicker from "react-datepicker";
@@ -13,21 +13,18 @@ const UserLogs = () => {
   const [error, setError] = useState(null);
   const [sortOrder, setSortOrder] = useState("desc");
   const [query, setQuery] = useState("");
-  const [limit] = useState("");
-
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const profileImage = localStorage.getItem("profileImage");
-  const role = localStorage.getItem("role")?.toLowerCase();
+  
+  const profileImage = sessionStorage.getItem("profileImage");
+  const role = sessionStorage.getItem("role")?.toLowerCase();
   const navigate = useNavigate();
  
   useEffect(() => {
     const fetchLogs = async () => {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       if (!token) {
         setError("Session expired. Please login again.");
         navigate("/");
@@ -190,6 +187,7 @@ const UserLogs = () => {
             />
 
             <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
+               <FiCalendar className="text-gray-400 text-sm" />
               <DatePicker
                 selectsRange
                 startDate={startDate}
@@ -224,7 +222,7 @@ const UserLogs = () => {
               <table className="w-full border-collapse">
                 <thead className="bg-gray-100 text-gray-600 uppercase text-[10px] md:text-xs">
                   <tr>
-                    <th className="px-3 md:px-6 py-3 text-left">S.NO</th>
+                    {/* <th className="px-3 md:px-6 py-3 text-left">S.NO</th> */}
                     <th className="px-3 md:px-6 py-3 text-left">USER</th>
                     <th className="px-3 md:px-6 py-3 text-left">EMAIL</th>
                     <th className="px-3 md:px-6 py-3 text-left">ACTION</th>
@@ -237,7 +235,7 @@ const UserLogs = () => {
                   {paginatedLogs.length > 0 ? (
                     paginatedLogs.map((log, index) => (
                       <tr key={log.sNo || index}>
-                        <td className="px-3 md:px-6 py-3">{log.sNo}</td>
+                        {/* <td className="px-3 md:px-6 py-3">{log.sNo}</td> */}
                         <td className="px-3 md:px-6 py-3 font-medium">{log.user}</td>
                         <td className="px-3 md:px-6 py-3 text-gray-600">{log.email || "-"}</td>
                         <td className="px-3 md:px-6 py-3">

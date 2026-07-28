@@ -10,56 +10,63 @@ export const AuthProvider = ({ children }) => {
 
   // Check token and load user when app starts
   useEffect(() => {
-    const loadUser = async () => {
+  const loadUser = async () => {
+    const token = sessionStorage.getItem("token");
 
-      const token = localStorage.getItem("token");
+    console.log("TOKEN FOUND:", token);
 
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const profile = await getProfile();
-        setUser(profile);
-      } catch (error) {
-        console.error("Profile fetch failed", error);
-        // localStorage.removeItem("token");
-        setUser(null);
-      }
-
+    if (!token) {
       setLoading(false);
-    };
+      return;
+    }
 
-    loadUser();
-  }, []);
+    try {
+      const profile = await getProfile();
+
+      console.log("PROFILE SUCCESS:", profile);
+
+      setUser(profile);
+    } catch (error) {
+      console.log("PROFILE ERROR:", error);
+
+      sessionStorage.removeItem("token");
+      setUser(null);
+    }
+
+    setLoading(false);
+  };
+
+  loadUser();
+}, []);
 
   // Login function
   const login = async (credentials) => {
+  try {
+    const loginResponse = await loginUser(credentials);
 
+    console.log("TOKEN AFTER LOGIN:", sessionStorage.getItem("token"));
+
+    // set user from login response first
+    setUser(loginResponse);
+
+    // then try profile
     try {
-
-      const loginResponse = await loginUser(credentials);
-
-      if (loginResponse?.token) {
-        localStorage.setItem("token", loginResponse.token);
-      }
-
       const profile = await getProfile();
       setUser(profile);
-
       return profile;
-
-    } catch (error) {
-      throw error;
+    } catch (err) {
+      return loginResponse;
     }
 
-  };
+  } catch (error) {
+    throw error;
+  }
+};
 
   // Logout function
   const logout = () => {
     logoutUser();
-    localStorage.removeItem("token");
+    // sessionStorage.removeItem("token");
     setUser(null);
   };
 

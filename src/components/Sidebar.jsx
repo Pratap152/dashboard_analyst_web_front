@@ -17,8 +17,8 @@ const Sidebar = () => {
   const [openDashboard, setOpenDashboard] = useState(false);
   const [dashboards, setDashboards] = useState([]);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-  const isMobile = window.innerWidth < 768;
-  const role = localStorage.getItem("role")?.toLowerCase();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const role = sessionStorage.getItem("role")?.toLowerCase();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -28,8 +28,8 @@ const Sidebar = () => {
   const handleLogout = () => setShowLogoutPopup(true);
 
   const confirmLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.clear();
+    sessionStorage.removeItem("token");
+    sessionStorage.clear();
     window.location.href = "/";
   };
 
@@ -38,6 +38,15 @@ const Sidebar = () => {
   useEffect(() => {
     fetchDashboards();
   }, []);
+  useEffect(() => {
+  const handleResize = () => {
+    setIsMobile(window.innerWidth < 768);
+  };
+
+  window.addEventListener("resize", handleResize);
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
 
   useEffect(() => {
     if (location.pathname.startsWith("/dashboard")) {
@@ -47,7 +56,7 @@ const Sidebar = () => {
 
   const fetchDashboards = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       if (!token) return;
 
       const res = await axios.get(
@@ -123,7 +132,7 @@ const Sidebar = () => {
                     dashboards.map((item) => (
                       <NavLink
                         key={item.id}
-                        to={`/reports/${item.id}`}
+                        to={`/reports/${encodeURIComponent(item.id)}/${item.name}`}
                         className={({ isActive }) =>
                           `flex items-center gap-3 py-2 px-3 rounded-xl transition-all duration-200 ${isActive
                             ? "bg-[#f4c542] text-black font-semibold shadow"
