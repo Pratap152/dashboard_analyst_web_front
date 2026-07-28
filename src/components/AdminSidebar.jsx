@@ -26,7 +26,7 @@ const AdminSidebar = () => {
   const isUsersPage = location.pathname.startsWith("/manage-users");
   const isDashboardPage = location.pathname.startsWith("/dashboard-selection");
   const isReportsPage = location.pathname.startsWith("/reports");
-#  const isUserLogsPage = location.pathname.startsWith("/user-logs"); // ✅ ADDED
+  const isUserLogsPage = location.pathname.startsWith("/user-logs"); // ✅ ADDED
 
   const isHomeActive =
     isHomePage || isUsersPage || isDashboardPage || isReportsPage;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved, chart }) {
   const [showVisuals, setShowVisuals] = useState(true);
@@ -76,55 +76,36 @@ export default function ChartOverlay({ open, onClose, dashboardId, onChartSaved,
     }
   }, [chart, open]);
 
-const fetchChartConfigs = useCallback(async () => {
-  try {
-    const response = await fetch(
-      "https://dashboard-backend-cyrd.onrender.com/api/chart-types/config",
-      {
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+  const fetchChartConfigs = async () => {
+    try {
+      const response = await fetch("https://dashboard-backend-cyrd.onrender.com/api/chart-types/config", {
+        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      });
+      const data = await response.json();
+      if (response.ok) setChartConfigs(data.charts || []);
+    } catch (error) { }
+  };
+
+  const fetchColumns = async () => {
+    try {
+      const response = await fetch(`https://dashboard-backend-cyrd.onrender.com/api/upload/builder/${dashboardId}`, {
+        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setColumns(data.columns || []);
+        setFileId(data.fileId);
       }
-    );
+    } catch (error) { }
+  };
 
-    const data = await response.json();
-
-    if (response.ok) {
-      setChartConfigs(data.charts || []);
+  useEffect(() => {
+    if (open) {
+      fetchChartConfigs();
+      fetchColumns();
     }
-  } catch (error) {
-    console.error(error);
-  }
-}, [token]);
+  }, [open]);
 
-const fetchColumns = useCallback(async () => {
-  try {
-    const response = await fetch(
-      `https://dashboard-backend-cyrd.onrender.com/api/upload/builder/${dashboardId}`,
-      {
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-      }
-    );
-
-    const data = await response.json();
-
-    if (response.ok) {
-      setColumns(data.columns || []);
-      setFileId(data.fileId);
-    }
-  } catch (error) {
-   console.error("Failed to fetch chart configs:", error);
-  }
-}, [dashboardId, token]);
-
-useEffect(() => {
-  if (open) {
-    fetchChartConfigs();
-    fetchColumns();
-  }
-}, [open, fetchChartConfigs, fetchColumns]);
 
   const handleSaveChart = async () => {
     if (!fileId) return showToast("File not loaded yet ", "error");
