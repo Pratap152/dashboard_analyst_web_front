@@ -3,7 +3,7 @@ name: dashboard frontend
 on:
   push:
     branches:
-     - de 
+     - dev 
 
 jobs:
   build:
@@ -25,7 +25,7 @@ jobs:
         run: npm -v
 
       - name: install dependencies
-        run: npm install
+        run: npm ci
 
       - name: build react application
         run: CI=false npm run build
