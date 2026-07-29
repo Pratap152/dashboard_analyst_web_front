@@ -3,7 +3,7 @@ name: dashboard frontend
 on:
   push:
     branches:
-      - dev
+     - de 
 
 jobs:
   build:
